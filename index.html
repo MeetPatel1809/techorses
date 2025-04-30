@@ -1,254 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTM Store - Coming Soon</title>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    <style>
-        :root {
-            --primary-color: #6c63ff;
-            --secondary-color: #4a42e8;
-            --text-color: #333;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --transition: all 0.3s ease;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vande Mataram</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom, #ff9933, #ffffff, #138808);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    .flag {
+      width: 300px;
+      height: 180px;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      border: 4px solid #000;
+      animation: float 3s ease-in-out infinite;
+    }
 
-        body {
-            background-color: var(--light-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            text-align: center;
-            overflow-x: hidden;
-        }
+    .band {
+      height: 33.33%;
+      width: 100%;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            width: 100%;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
+    .saffron { background-color: #FF9933; }
+    .white { 
+      background-color: #fff; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+    }
+    .green { background-color: #138808; }
 
-        .logo {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: var(--primary-color);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+    .chakra {
+      height: 50px;
+      width: 50px;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/1/17/Ashoka_Chakra.svg') no-repeat center;
+      background-size: contain;
+    }
 
-        .tagline {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.8;
-            max-width: 600px;
-        }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-            color: var(--dark-color);
-            position: relative;
-            display: inline-block;
-        }
+    .text {
+      margin-top: 30px;
+      font-size: 3rem;
+      color: #fff;
+      text-shadow: 2px 2px 8px #000;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
 
-        h1::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 4px;
-            background: var(--primary-color);
-            border-radius: 2px;
-        }
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #ff9933, 0 0 20px #fff, 0 0 30px #138808; }
+      to { text-shadow: 0 0 20px #fff, 0 0 30px #ff9933, 0 0 40px #138808; }
+    }
 
-        .animation-container {
-            width: 100%;
-            max-width: 500px;
-            margin: 2rem auto;
-        }
-
-        .countdown {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin: 2rem 0;
-            flex-wrap: wrap;
-        }
-
-        .countdown-item {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            min-width: 100px;
-            transition: var(--transition);
-        }
-
-        .countdown-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .countdown-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .countdown-label {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.7;
-        }
-
-
-
-
-        footer {
-            background: var(--dark-color);
-            color: white;
-            padding: 1.5rem;
-            text-align: center;
-            margin-top: auto;
-        }
-
-        @media (max-width: 768px) {
-            .logo {
-                font-size: 2rem;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .countdown-item {
-                min-width: 80px;
-                padding: 1rem;
-            }
-
-            .countdown-number {
-                font-size: 2rem;
-            }
-
-
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 1.5rem;
-            }
-
-            .countdown-item {
-                min-width: 70px;
-                padding: 0.8rem;
-            }
-
-            .countdown-number {
-                font-size: 1.5rem;
-            }
-
-            .countdown-label {
-                font-size: 0.8rem;
-            }
-        }
-    </style>
+    @media (max-width: 500px) {
+      .flag {
+        width: 90%;
+        height: auto;
+      }
+      .text {
+        font-size: 2rem;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="logo">MTM Store</div>
-        <p class="tagline">We're crafting something amazing for you. Stay tuned for our grand opening!</p>
-
-        <h1>Coming Soon</h1>
-
-        <div class="animation-container">
-            <lottie-player src="https://assets5.lottiefiles.com/packages/lf20_raiw2hpe.json" background="transparent"
-                speed="1" style="width: 100%; height: auto;" loop autoplay>
-            </lottie-player>
-        </div>
-
-        <div class="countdown">
-            <div class="countdown-item">
-                <div class="countdown-number" id="days">00</div>
-                <div class="countdown-label">Days</div>
-            </div>
-            <div class="countdown-item">
-                <div class="countdown-number" id="hours">00</div>
-                <div class="countdown-label">Hours</div>
-            </div>
-            <div class="countdown-item">
-                <div class="countdown-number" id="minutes">00</div>
-                <div class="countdown-label">Minutes</div>
-            </div>
-            <div class="countdown-item">
-                <div class="countdown-number" id="seconds">00</div>
-                <div class="countdown-label">Seconds</div>
-            </div>
-        </div>
-
-
-
-
+  <div class="flag">
+    <div class="band saffron"></div>
+    <div class="band white">
+      <div class="chakra"></div>
     </div>
-    </div>
-
-    <footer>
-        &copy; 2025 MTM Store. All Rights Reserved.
-    </footer>
-
-    <script>
-        // Countdown Timer
-        function updateCountdown() {
-            const launchDate = new Date('2025-04-10T00:00:00').getTime();
-            const now = new Date().getTime();
-            const distance = launchDate - now;
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            document.getElementById('days').textContent = days.toString().padStart(2, '0');
-            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-
-            if (distance < 0) {
-                clearInterval(countdownTimer);
-                document.getElementById('days').textContent = '00';
-                document.getElementById('hours').textContent = '00';
-                document.getElementById('minutes').textContent = '00';
-                document.getElementById('seconds').textContent = '00';
-            }
-        }
-
-        const countdownTimer = setInterval(updateCountdown, 1000);
-        updateCountdown();
-
-
-    </script>
+    <div class="band green"></div>
+  </div>
+  <div class="text">Vande Mataram 🇮🇳</div>
 </body>
-
 </html>
