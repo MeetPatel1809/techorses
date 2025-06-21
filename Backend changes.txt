@@ -1,0 +1,238 @@
+1. product model :
+
+preference = db.Column(db.Integer, default=0, nullable=True, unique=True)
+
+
+2. @products_bp.route('/products', methods=['GET'])
+
+'preference': product.preference,
+
+
+3. @order_bp.route('/orders', methods=['GET'])
+
+'product_id': item.product_id,
+'product_name': item.product.name if item.product else None,
+
+
+4. New Route in Order.py
+
+@order_bp.route('/update-order/<string:order_id>', methods=['POST'])
+@token_required(roles=['admin'])
+def update_order(order_id):
+    data = request.get_json()
+    
+    # Validate required fields
+    if 'items' not in data or not isinstance(data['items'], list):
+        return jsonify({'error': 'Invalid items data'}), 400
+    
+    try:
+        # Get the order
+        order = Order.query.filter_by(order_id=order_id).first()
+        if not order:
+            return jsonify({'error': 'Order not found'}), 404
+            
+        if order.order_status not in ['PENDING', 'APPROVED']:
+            return jsonify({'error': 'Cannot update orders that are not PENDING or APPROVED'}), 400
+        
+        # Get all current order items
+        current_items = {item.item_id: item for item in order.items}
+        items_to_keep = set()
+        new_subtotal = Decimal('0')
+        total_items = 0
+        stock_updates = {}
+        
+        for item_data in data['items']:
+            # Existing item update
+            if 'item_id' in item_data:
+                item_id = item_data['item_id']
+                
+                # Find existing item
+                item = current_items.get(item_id)
+                if not item:
+                    continue  # Skip if item not found (shouldn't happen)
+                    
+                items_to_keep.add(item_id)
+                
+                # Update quantity
+                new_quantity = int(item_data['quantity'])
+                if new_quantity <= 0:
+                    continue  # Skip if invalid quantity
+                    
+                # Calculate quantity difference for stock updates
+                quantity_diff = new_quantity - item.quantity
+                
+                # Handle stock updates
+                if item.color_id:
+                    color = ProductColor.query.get(item.color_id)
+                    if not color:
+                        continue
+                        
+                    if color.color_id not in stock_updates:
+                        stock_updates[color.color_id] = {
+                            'color': color,
+                            'quantity_diff': 0
+                        }
+                    stock_updates[color.color_id]['quantity_diff'] -= quantity_diff
+                    
+                    if color.stock_quantity + stock_updates[color.color_id]['quantity_diff'] < 0:
+                        return jsonify({
+                            'error': f'Not enough stock for product color {color.name}. Available: {color.stock_quantity}',
+                            'product_id': item.product_id,
+                            'color_id': item.color_id
+                        }), 400
+                
+                # Update item
+                item.quantity = new_quantity
+                if 'unit_price' in item_data:
+                    try:
+                        item.unit_price = Decimal(str(item_data['unit_price']))
+                    except:
+                        pass  # Keep existing price if invalid
+                item.total_price = item.unit_price * item.quantity
+                
+                # Add to new subtotal
+                new_subtotal += item.total_price
+                total_items += item.quantity
+                
+                # Update order details (serial numbers)
+                existing_details = OrderDetail.query.filter_by(item_id=item_id).all()
+                
+                # Delete excess details if quantity decreased
+                for i in range(new_quantity, len(existing_details)):
+                    db.session.delete(existing_details[i])
+                
+                # Add new details if quantity increased
+                for i in range(len(existing_details), new_quantity):
+                    new_detail = OrderDetail(
+                        item_id=item_id,
+                        order_id=order_id,
+                        product_id=item.product_id
+                    )
+                    db.session.add(new_detail)
+            
+            # New item addition
+            else:
+                # Handle new items (code remains the same as before)
+                product_id = item_data['product_id']
+                quantity = int(item_data['quantity'])
+                
+                if 'unit_price' not in item_data:
+                    return jsonify({'error': 'unit_price is required for new items'}), 400
+                
+                try:
+                    unit_price = Decimal(str(item_data['unit_price']))
+                except:
+                    return jsonify({'error': 'Invalid unit_price format'}), 400
+                
+                product = Product.query.get(product_id)
+                if not product:
+                    return jsonify({'error': f'Product {product_id} not found'}), 404
+                
+                color_id = item_data.get('color_id')
+                model_id = item_data.get('model_id')
+                
+                # Check stock for new items
+                if color_id:
+                    color = ProductColor.query.get(color_id)
+                    if not color:
+                        return jsonify({'error': f'Color {color_id} not found'}), 404
+                    if color.stock_quantity < quantity:
+                        return jsonify({
+                            'error': f'Not enough stock for product color {color.name}. Available: {color.stock_quantity}'
+                        }), 400
+                    
+                    if color.color_id not in stock_updates:
+                        stock_updates[color.color_id] = {
+                            'color': color,
+                            'quantity_diff': 0
+                        }
+                    stock_updates[color.color_id]['quantity_diff'] -= quantity
+                
+                # Create new order item
+                new_item = OrderItem(
+                    order_id=order_id,
+                    product_id=product_id,
+                    model_id=model_id,
+                    color_id=color_id,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    total_price=unit_price * quantity
+                )
+                db.session.add(new_item)
+                db.session.flush()  # Generate item_id
+                
+                # Add order details (serial numbers)
+                for i in range(quantity):
+                    order_detail = OrderDetail(
+                        item_id=new_item.item_id,
+                        order_id=order_id,
+                        product_id=product_id
+                    )
+                    db.session.add(order_detail)
+                
+                new_subtotal += new_item.total_price
+                total_items += quantity
+        
+        # Remove items that were not included in the update (if any)
+        for item_id, item in current_items.items():
+            if item_id not in items_to_keep:
+                # Update stock if needed
+                if item.color_id:
+                    color = ProductColor.query.get(item.color_id)
+                    if color:
+                        color.stock_quantity += item.quantity
+                        db.session.add(color)
+                
+                # Delete the item and its details
+                OrderDetail.query.filter_by(item_id=item_id).delete()
+                db.session.delete(item)
+        
+        # Recalculate order totals
+        order_discount_amount = (new_subtotal * order.discount_percent) / Decimal('100')
+        amount_after_discount = new_subtotal - order_discount_amount
+        
+        # Calculate GST (18% of subtotal excluding GST)
+        subtotal_without_gst = amount_after_discount / Decimal('1.18')
+        gst = amount_after_discount - subtotal_without_gst
+        
+        # Recalculate delivery charge if needed
+        if not order.is_free_delivery:
+            delivery_charge = calculateDelivery(new_subtotal)
+        else:
+            delivery_charge = Decimal('0')
+            
+        # Update order
+        order.subtotal = subtotal_without_gst
+        order.gst = gst
+        order.delivery_charge = delivery_charge
+        order.total_amount = amount_after_discount + delivery_charge
+        order.total_items = total_items
+        order.updated_at = datetime.now(tz=ZoneInfo('Asia/Kolkata'))
+        
+        # Apply stock updates
+        for update in stock_updates.values():
+            update['color'].stock_quantity += update['quantity_diff']
+            db.session.add(update['color'])
+            
+            if update['color'].stock_quantity <= update['color'].threshold:
+                # Trigger low stock notification
+                pass
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Order updated successfully',
+            'order': {
+                'order_id': order.order_id,
+                'subtotal': float(order.subtotal),
+                'gst': float(order.gst),
+                'delivery_charge': float(order.delivery_charge),
+                'total_amount': float(order.total_amount),
+                'total_items': order.total_items
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error updating order: {str(e)}'}), 500
